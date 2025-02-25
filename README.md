@@ -18,3 +18,4 @@ An intelligent financial management system built with Python and Streamlit that 
 ```bash
 git clone https://github.com/yourusername/AI-Powered-Finance-Tracker.git
 cd AI-Powered-Finance-Tracker
+streamlit run AI-Powered-Finance-Tracker
