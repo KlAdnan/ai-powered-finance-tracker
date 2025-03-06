@@ -12,10 +12,121 @@ An intelligent financial management system built with Python and Streamlit that 
 - 🌙 Dark/Light Mode
 - 📊 Advanced Analytics
 
+## Prerequisites
+
+Ensure you have the following installed before running the project:
+
+1. **Python (>=3.8)**: Download and install Python from [python.org](https://www.python.org/downloads/).
+2. **pip**: Ensure pip is installed and updated.
+   ```bash
+   python -m ensurepip --default-pip
+   python -m pip install --upgrade pip
+   ```
+3. **Git**: Install Git if you want to clone the repository instead of downloading the ZIP file. [Download Git](https://git-scm.com/downloads).
+
 ## Installation
 
-1. Clone the repository:
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/yourusername/AI-Powered-Finance-Tracker.git
 cd AI-Powered-Finance-Tracker
-streamlit run AI-Powered-Finance-Tracker
+```
+
+### 2. Create a Virtual Environment (Optional but Recommended)
+```bash
+python -m venv venv  # Creates a virtual environment
+source venv/bin/activate  # On macOS/Linux
+venv\Scripts\activate  # On Windows
+```
+
+### 3. Install Required Packages
+
+Run the following command to install all dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+If you need to install dependencies manually, use:
+```bash
+pip install streamlit pandas numpy plotly yfinance streamlit-option-menu hashlib
+```
+
+### 4. Create a SQLite Database
+
+Run the application once to initialize the database:
+```bash
+python realfinance.py
+```
+
+Alternatively, create the database manually:
+```bash
+python -c "import sqlite3; conn = sqlite3.connect('finance_tracker.db'); conn.close()"
+```
+
+## Running the Application
+
+To start the Streamlit web app, run:
+```bash
+streamlit run realfinance.py
+```
+
+Then open `http://localhost:8501` in your browser.
+
+## Project Structure
+
+```
+AI-Powered-Finance-Tracker/
+│
+├── realfinance.py          # Main application script
+├── requirements.txt        # Required dependencies
+├── finance_tracker.db      # SQLite database file (auto-generated)
+└── README.md               # Project documentation
+```
+
+## Version Control (Optional but Recommended)
+
+To track changes using Git, initialize the repository and make the first commit:
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+To push changes to GitHub:
+```bash
+git remote add origin https://github.com/yourusername/AI-Powered-Finance-Tracker.git
+git branch -M main
+git push -u origin main
+```
+
+## Troubleshooting
+
+### 1. `ModuleNotFoundError`
+If you get an error like `ModuleNotFoundError: No module named 'streamlit'`, make sure you have installed all dependencies by running:
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Database Errors
+If you face issues with the database, try deleting `finance_tracker.db` and rerunning the script to regenerate it:
+```bash
+rm finance_tracker.db  # macOS/Linux
+del finance_tracker.db  # Windows
+python realfinance.py
+```
+
+### 3. Streamlit Not Found
+If the command `streamlit run` is not recognized, activate the virtual environment or install Streamlit globally:
+```bash
+pip install streamlit
+```
+
+## Contributing
+
+Feel free to fork this repository, submit pull requests, or report issues. Contributions are welcome!
+
+## Author
+
+Developed by **Muhammed Adnan**  
+📧 Contact: kladnan321@gmail.com
+
