@@ -9,7 +9,466 @@ from streamlit_option_menu import option_menu
 import sqlite3
 import hashlib
 
-# ============= DATABASE SETUP =============
+# ============ PAGE CONFIG ============
+st.set_page_config(
+    page_title="AI Financial Planner",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============ SESSION STATE ============
+if 'dark_mode' not in st.session_state:
+    st.session_state.dark_mode = False
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'theme' not in st.session_state:     # Initialize 'theme' in session state
+    st.session_state.theme = "light"     # Default to "light" theme
+
+# ============ THEME IMPLEMENTATION ============
+def load_css():
+    # Define CSS for both light and dark themes
+    light_theme = """
+    <style>
+    .stApp {
+        background-color: #F7F7F7;
+        color: #1E3932;
+    }
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        border-radius: 0.5rem;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #00704A;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        border-radius: 0.5rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 0.5rem;
+        padding: 10px 20px;
+        background-color: white;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #00704A;
+        color: white;
+    }
+    .stButton>button {
+        border-radius: 0.5rem;
+        background-color: #00704A;
+        color: white;
+    }
+    .stButton>button:hover {
+        background-color: #C6A969;
+        color: #1E3932;
+    }
+    .stExpander {
+        border-radius: 0.5rem;
+        border: 1px solid #e6e6e6;
+    }
+    div[data-testid="stForm"] {
+        border-radius: 0.5rem;
+        border: 1px solid #e6e6e6;
+        padding: 1rem;
+    }
+    div[data-testid="stMetric"] {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #00704A;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 0;
+    }
+    /* Theme toggle button */
+    .theme-toggle {
+        position: fixed;
+        top: 10px;
+        right: 70px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        background-color: white;
+        border-radius: 20px;
+        padding: 5px 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        cursor: pointer;
+    }
+    .theme-toggle img {
+        width: 25px;
+        height: 25px;
+        margin-right: 5px;
+    }
+    </style>
+    """
+    
+    dark_theme = """
+    <style>
+    .stApp {
+        background-color: #1E1E1E;
+        color: #E0E0E0;
+    }
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        border-radius: 0.5rem;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #C6A969;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        border-radius: 0.5rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 0.5rem;
+        padding: 10px 20px;
+        background-color: #2D2D2D;
+        color: #E0E0E0;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #00704A;
+        color: white;
+    }
+    .stButton>button {
+        border-radius: 0.5rem;
+        background-color: #00704A;
+        color: white;
+    }
+    .stButton>button:hover {
+        background-color: #C6A969;
+        color: #1E3932;
+    }
+    .stExpander {
+        border-radius: 0.5rem;
+        border: 1px solid #444444;
+    }
+    div[data-testid="stForm"] {
+        border-radius: 0.5rem;
+        border: 1px solid #444444;
+        padding: 1rem;
+        background-color: #2D2D2D;
+    }
+    div[data-testid="stMetric"] {
+        background-color: #2D2D2D;
+        border-radius: 0.5rem;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        color: #E0E0E0;
+    }
+    div[data-testid="stMetric"] label {
+        color: #C6A969;
+    }
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #00704A;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 0;
+    }
+    /* Theme toggle button */
+    .theme-toggle {
+        position: fixed;
+        top: 10px;
+        right: 70px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        background-color: #2D2D2D;
+        color: #E0E0E0;
+        border-radius: 20px;
+        padding: 5px 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        cursor: pointer;
+    }
+    .theme-toggle img {
+        width: 25px;
+        height: 25px;
+        margin-right: 5px;
+    }
+    /* Additional dark theme elements */
+    .stDataFrame, .stTable {
+        background-color: #2D2D2D;
+        color: #E0E0E0;
+        border-radius: 0.5rem;
+    }
+    .stSelectbox, .stNumberInput, .stDateInput, .stTextInput, .stTextArea {
+        background-color: #2D2D2D;
+        color: #E0E0E0;
+        border-radius: 0.5rem;
+    }
+    </style>
+    """
+
+    royal_theme = """
+    <style>
+    .stApp {
+        background-color: #0A1747;
+        color: #E3F2FD;
+    }
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        border-radius: 0.5rem;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFD700;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+        border-radius: 0.5rem;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 0.5rem;
+        padding: 10px 20px;
+        background-color: #122164;
+        color: #E3F2FD;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #1A237E;
+        color: #FFD700;
+    }
+    .stButton>button {
+        border-radius: 0.5rem;
+        background-color: #1A237E;
+        color: #FFD700;
+    }
+    .stButton>button:hover {
+        background-color: #3949AB;
+        color: #E3F2FD;
+    }
+    .stExpander {
+        border-radius: 0.5rem;
+        border: 1px solid #3949AB;
+    }
+    div[data-testid="stForm"] {
+        border-radius: 0.5rem;
+        border: 1px solid #3949AB;
+        padding: 1rem;
+        background-color: #122164;
+        color: #E3F2FD;
+    }
+    div[data-testid="stMetric"] {
+        background-color: #122164;
+        border-radius: 0.5rem;
+        padding: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        color: #E3F2FD;
+    }
+    div[data-testid="stMetric"] label {
+        color: #FFD700;
+    }
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #1A237E;
+        color: #FFD700;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+        border-radius: 0;
+    }
+    /* Theme toggle button */
+    .theme-toggle {
+        position: fixed;
+        top: 10px;
+        right: 70px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        background-color: #122164;
+        color: #E3F2FD;
+        border-radius: 20px;
+        padding: 5px 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        cursor: pointer;
+    }
+    .theme-toggle img {
+        width: 25px;
+        height: 25px;
+        margin-right: 5px;
+    }
+    /* Additional royal theme elements */
+    .stDataFrame, .stTable {
+        background-color: #122164;
+        color: #E3F2FD;
+        border-radius: 0.5rem;
+    }
+    .stSelectbox, .stNumberInput, .stDateInput, .stTextInput, .stTextArea {
+        background-color: #122164;
+        color: #E3F2FD;
+        border-radius: 0.5rem;
+    }
+    </style>
+    """
+    
+    # Return the appropriate theme based on session state
+    if st.session_state.dark_mode:
+        return dark_theme
+    elif st.session_state.theme == "royal":
+        return royal_theme
+    else:
+        return light_theme
+
+def theme_toggle():
+    # Create base64 encoded images for light/dark mode icons
+    light_icon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkMxMDciIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1zdW4iPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiLz48cGF0aCBkPSJNMTIgMnY0Ii8+PHBhdGggZD0iTTEyIDE4djQiLz48cGF0aCBkPSJNNC45MyA0LjkzIDcuNzYgNy43NiIvPjxwYXRoIGQ9Ik0xNi4yNCAxNi4yNCAxOS4wNyAxOS4wNyIvPjxwYXRoIGQ9Ik0yIDEyaDQiLz48cGF0aCBkPSJNMTggMTJoNCIvPjxwYXRoIGQ9Ik00LjkzIDE5LjA3IDcuNzYgMTYuMjQiLz48cGF0aCBkPSJNMTYuMjQgNy43NiAxOS4wNyA0LjkzIi8+PC9zdmc+"
+    dark_icon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NjY2ZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1tb29uIj48cGF0aCBkPSJNMTIgM2MuMTMyIDIuMjItMS41MzggNC4xNTUtMy43NDggNC4xNTVhNi4yMSA2LjIxIDAgMCAxLTIuMzMtLjQ1M2MuMTM5IDMuNTYyIDMuMDQ5IDYuNDI4IDYuNjM0IDYuNDI0IDMuNjggMCA2LjY2Ny0yLjk3MyA2LjY2Ny0yLjY0QzE1LjIyNyAzLjE1MyAxNi4xNjggMCAxMi4xMDIgMGMtLjE2OCAwLS4zMzYuMDA1LS41MDIuMDE1QzEyLjAwMSAuMDEgMTIgMy4wMyAxMiA2LjAzIDEyIDYuMDMgMTIgNnYgNi4wMyA2LjA0Yy0uMDAxIDMuMDA0IDIuNDM2IDUuNDIgNS40OTggNS40MiA0LjE0IDAgNy41MDgtMy4zNjggNy41MDgtNy41MDhWMmMwLS4xNjgtLjAwNS0uMzM2LS4wMTUtLjUwMkwyMS45ODUgNi4wMTZD"
+    royal_icon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQ3MDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS10cm9uZSI+PHBhdGggZD0iTTEyIDUuMjUiLz48cGF0aCBkPSJNMTIgMTguNXY2LjUiLz48cGF0aCBkPSJNLjkyOCA1LjY4OCA1LjI4MSA2LjMwOSIvPjxwYXRoIGQ9IjE4LjcwNyAxOC4zMDIgMTguNTA3IDE3LjY4MSIvPjxwYXRoIGQ9IjQuOTI4IDE4LjMwMiA1LjI4MSAxNy42ODMiLz48cGF0aCBkPSIxOC43MDcgNS42ODggMTguNTA3IDYuMzA5Ii8+PHBhdGggZD0iNSAxMmguNSIvPjxwYXRoIGQ9IjE4LjUgMTJoLjUiLz48cGF0aCBkPSIxMi42ODggNi4zMDkgMTMuMzA5IDUuNjg4Ii8+PHBhdGggZD0iMTAuNjkxIDE3LjY0MyAxMC4zMzggMTguMzA2Ii8+PHBhdGggZD0iMTIuNjg4IDE3LjY0MyAxMy4zMDkgMTguMzA2Ii8+PHBhdGggZD0iMTAuNjkxIDYuMzA5IDEwLjMzOCA1LjY4OCIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L3N2Zz4="
+
+    # Choose icon based on current theme
+    if st.session_state.dark_mode:
+        icon = dark_icon
+        label = "Switch to Light Mode"
+    elif st.session_state.theme == "royal":
+        icon = royal_icon
+        label = "Switch to Light Mode"
+    else:
+        icon = light_icon
+        label = "Switch to Dark Mode"
+
+    # Create the toggle button HTML
+    toggle_html = f"""
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <img src="{icon}" alt="Theme Icon" />
+        <span>{label}</span>
+    </div>
+    <script>
+        // ... (Your existing JavaScript code) ... 
+    </script>
+    """
+    return toggle_html
+  
+
+def currency_switcher():
+    currencies = {
+        "🇮🇳 INR": "https://flagcdn.com/w40/in.png",
+        "🇺🇸 USD": "https://flagcdn.com/w40/us.png",
+        "🇦🇪 AED": "https://flagcdn.com/w40/ae.png",
+        "🇸🇦 SAR": "https://flagcdn.com/w40/sa.png",
+        "🇨🇦 CAD": "https://flagcdn.com/w40/ca.png",
+        "🇶🇦 QAR": "https://flagcdn.com/w40/qa.png",
+        "🇨🇳 CNY": "https://flagcdn.com/w40/cn.png"
+    }
+
+    selected_currency = st.selectbox(
+        "Select Currency", list(currencies.keys())
+    )
+    st.session_state.currency = selected_currency.split()[1]  # Store currency code
+
+    # Display the selected flag
+    st.image(currencies[selected_currency], width=40)
+
+    return selected_currency  # Return the selected value to display
+
+
+# Handle theme switching via URL parameter
+def handle_theme_from_url():
+    # Get query parameters using st.query_params
+    query_params = st.query_params
+
+    # Check if theme parameter exists
+    if 'theme' in query_params:
+        theme_param = query_params['theme'][0]
+        if theme_param == 'dark' and not st.session_state.dark_mode:
+            st.session_state.dark_mode = True
+        elif theme_param == 'light' and st.session_state.dark_mode:
+            st.session_state.dark_mode = False
+
+    # Apply CSS based on current theme
+    theme_css = load_css()
+    toggle_html = theme_toggle()  # Get the toggle button HTML
+    
+    # Inject the CSS and theme toggle button
+    st.markdown(theme_css, unsafe_allow_html=True)
+    st.markdown(toggle_html, unsafe_allow_html=True)
+
+# ============ COLOR SCHEME ============
+if st.session_state.dark_mode:
+    COLORS = {
+        'primary': '#00704A',     # Starbucks Green
+        'secondary': '#27251F',   # Dark Gray
+        'accent': '#C6A969',      # Gold
+        'background': '#1E1E1E',  # Dark Background
+        'text_dark': '#E0E0E0',   # Light Text for Dark Mode
+        'text_light': '#FFFFFF',  # White Text
+        'success': '#006241',     # Dark Green
+        'warning': '#CBA258',     # Light Gold
+        'error': '#DC3545',       # Red
+    }
+else:
+    COLORS = {
+        'primary': '#00704A',     # Starbucks Green
+        'secondary': '#27251F',   # Dark Gray
+        'accent': '#C6A969',      # Gold
+        'background': '#F7F7F7',  # Light Background
+        'text_dark': '#1E3932',   # Dark Green Text
+        'text_light': '#FFFFFF',  # White Text
+        'success': '#006241',     # Dark Green
+        'warning': '#CBA258',     # Light Gold
+        'error': '#DC3545',       # Red
+    }
+
+# ============ CUSTOM CSS ============
+st.markdown(f"""
+    <style>
+    .main .block-container {{
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }}
+    
+    .footer {{
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #00704A;
+        color: white;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+    }}
+    
+    .stApp {{
+        background-color: {COLORS['background']};
+    }}
+    
+    h1, h2, h3 {{
+        color: {COLORS['primary']};
+    }}
+
+    .header-container {{
+        position: fixed; /* Stay in place */
+        top: 10px;
+        right: 10px;
+        display: flex;   /* Enable flexbox for alignment */
+        align-items: center; /* Align items vertically */
+        z-index: 9999; /* Ensure it stays on top */
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
+
+# ============ DATABASE SETUP ============
 def init_db():
     conn = sqlite3.connect('finance_tracker.db')
     c = conn.cursor()
@@ -46,65 +505,7 @@ def init_db():
 # Initialize database
 init_db()
 
-# ============= CONFIGURATION =============
-st.set_page_config(
-    page_title="AI Financial Planner",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# ============= COLOR SCHEME =============
-COLORS = {
-    'primary': '#00704A',     # Starbucks Green
-    'secondary': '#27251F',   # Dark Gray
-    'accent': '#C6A969',      # Gold
-    'background': '#F7F7F7',  # Light Background
-    'text_dark': '#1E3932',   # Dark Green Text
-    'text_light': '#FFFFFF',  # White Text
-    'success': '#006241',     # Dark Green
-    'warning': '#CBA258',     # Light Gold
-    'error': '#DC3545',       # Red
-}
-
-# ============= CUSTOM CSS =============
-st.markdown(f"""
-    <style>
-    .main .block-container {{
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }}
-    
-    .footer {{
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #00704A;
-        color: white;
-        text-align: center;
-        padding: 10px;
-        font-size: 14px;
-    }}
-    
-    .stApp {{
-        background-color: {COLORS['background']};
-    }}
-    
-    h1, h2, h3 {{
-        color: {COLORS['primary']};
-    }}
-""", unsafe_allow_html=True)
-
-
-# ============= SESSION STATE =============
-if 'dark_mode' not in st.session_state:
-    st.session_state.dark_mode = False
-if 'user_id' not in st.session_state:
-    st.session_state.user_id = None
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-
-# ============= AUTHENTICATION =============
+# ============ AUTHENTICATION ============
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -178,7 +579,7 @@ def auth_page():
                     else:
                         st.error(message)
 
-# ============= ION =============
+# ============ NAVIGATION ============
 def create_navigation():
     return option_menu(
         menu_title=None,
@@ -202,7 +603,8 @@ def create_navigation():
 }
 
     )
-# ============= DASHBOARD =============
+
+# ============ DASHBOARD ============
 def dashboard():
     st.markdown("<h1 style='text-align: center;'>Financial Dashboard</h1>", unsafe_allow_html=True)
     
@@ -227,7 +629,7 @@ def dashboard():
         st.metric(
             label="Expenses",
             value="₹45,000",
-            delta="-5%"
+            delta="5%"
         )
     
     with col4:
@@ -278,184 +680,267 @@ def dashboard():
     except Exception as e:
         st.error("Unable to fetch market data. Please check your internet connection.")
 
-# ============= EXPENSE TRACKER =============
+# ============ EXPENSE TRACKER ============
 def expense_tracker():
+    """
+    This function implements the Smart Expense Tracker functionality.
+    It allows users to:
+        - Add new expenses with date, amount, category, and description.
+        - Visualize expenses with a pie chart and a daily expense trend line chart.
+        - View a summary of total expenses, average daily expense, and the most common expense category.
+    """
     st.markdown("<h1 style='text-align: center;'>Smart Expense Tracker</h1>", unsafe_allow_html=True)
-    
-    # Add New Expense
+
+    # --- Add New Expense ---
     with st.expander("Add New Expense", expanded=True):
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             expense_date = st.date_input("Date", datetime.now())
             expense_amount = st.number_input("Amount (₹)", min_value=0.0, step=100.0)
-        
+
         with col2:
-            default_categories = ["Needs", "Wants", "Investment", "Bills", "Entertainment", "Health", "Other"]
+            default_categories = ["Needs", "Wants", "Investment", "Bills",
+                                  "Entertainment", "Health", "Other"]
             expense_category = st.selectbox("Category", default_categories)
             if expense_category == "Other":
                 expense_category = st.text_input("Specify Category")
-        
+
         with col3:
             expense_description = st.text_area("Description", height=100)
-        
+
         if st.button("Add Expense"):
-            conn = sqlite3.connect('finance_tracker.db')
-            c = conn.cursor()
-            c.execute("""
-                INSERT INTO expenses (user_id, date, amount, category, description)
-                VALUES (?, ?, ?, ?, ?)
-            """, (st.session_state.user_id, expense_date.strftime("%Y-%m-%d"), 
-                  expense_amount, expense_category, expense_description))
-            conn.commit()
-            conn.close()
-            st.success("Expense added successfully!")
-    
-    # Expense Analysis
-    conn = sqlite3.connect('finance_tracker.db')
-    df_expenses = pd.read_sql_query("""
-        SELECT date, amount, category, description 
-        FROM expenses 
-        WHERE user_id = ?
-    """, conn, params=(st.session_state.user_id,))
-    conn.close()
-    
-    if not df_expenses.empty:
-        # Summary Statistics
-        st.markdown("### Expense Summary")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            total_expenses = df_expenses['amount'].sum()
-            st.metric("Total Expenses", f"₹{total_expenses:,.2f}")
-        
-        with col2:
-            avg_daily = df_expenses.groupby('date')['amount'].sum().mean()
-            st.metric("Average Daily Expense", f"₹{avg_daily:,.2f}")
-        
-        with col3:
-            most_common_category = df_expenses['category'].mode()[0]
-            st.metric("Most Common Category", most_common_category)
-        
-        # Visualizations
-        st.markdown("### Expense Analysis")
-        
-        # Category-wise Pie Chart
-        fig = px.pie(df_expenses, values='amount', names='category',
-                    title='Expense Distribution by Category')
-        st.plotly_chart(fig)
-        
-        # Daily Expense Trend
-        df_expenses['date'] = pd.to_datetime(df_expenses['date'])
-        daily_expenses = df_expenses.groupby('date')['amount'].sum().reset_index()
-        
-        fig = px.line(daily_expenses, x='date', y='amount',
-                     title='Daily Expense Trend',
-                     labels={'amount': 'Amount (₹)', 'date': 'Date'})
-        st.plotly_chart(fig)
-        
-    
-# ============= INVESTMENT PLANNER =============
+            # Ensure you have logic to handle st.session_state.user_id
+            # (likely set during user authentication).
+            if st.session_state.user_id:
+                conn = sqlite3.connect('finance_tracker.db')
+                c = conn.cursor()
+                c.execute(
+                    """
+                    INSERT INTO expenses (user_id, date, amount, category, description)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        st.session_state.user_id,
+                        expense_date.strftime("%Y-%m-%d"),
+                        expense_amount,
+                        expense_category,
+                        expense_description,
+                    ),
+                )
+                conn.commit()
+                conn.close()
+                st.success("Expense added successfully!")
+            else:
+                st.error("User not authenticated. Please log in.")
+
+    # --- Expense Analysis ---
+    if st.session_state.user_id:
+        conn = sqlite3.connect('finance_tracker.db')
+        df_expenses = pd.read_sql_query(
+            """
+            SELECT date, amount, category, description
+            FROM expenses
+            WHERE user_id = ?
+            """,
+            conn,
+            params=(st.session_state.user_id,),
+        )
+        conn.close()
+
+        if not df_expenses.empty:
+            # --- Summary Statistics ---
+            st.markdown("### Expense Summary")
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                total_expenses = df_expenses["amount"].sum()
+                st.metric(
+                    "Total Expenses",
+                    f"{st.session_state.currency} {total_expenses:,.2f}"
+                )
+
+            with col2:
+                avg_daily = df_expenses.groupby("date")["amount"].sum().mean()
+                st.metric("Average Daily Expense", f"{avg_daily:,.2f}")
+
+            with col3:
+                most_common_category = df_expenses["category"].mode()[0]
+                st.metric("Most Common Category", most_common_category)
+
+            # --- Visualizations ---
+            st.markdown("### Expense Analysis")
+
+            # Category-wise Pie Chart
+            fig = px.pie(
+                df_expenses,
+                values="amount",
+                names="category",
+                title="Expense Distribution by Category"
+            )
+            st.plotly_chart(fig)
+
+            # Daily Expense Trend
+            df_expenses["date"] = pd.to_datetime(df_expenses["date"])
+            daily_expenses = (
+                df_expenses.groupby("date")["amount"].sum().reset_index()
+            )
+
+            fig = px.line(
+                daily_expenses,
+                x="date",
+                y="amount",
+                title="Daily Expense Trend",
+                labels={"amount": "Amount (₹)", "date": "Date"},
+            )
+            st.plotly_chart(fig)
+        else:
+            st.info("No expenses have been added yet.")
+    else:
+        st.error("User not authenticated. Please log in.")
+
+
+# ============ INVESTMENT PLANNER ============
 def investment_planner():
+    """Calculates and visualizes investment projections."""
+
     st.markdown("<h1 style='text-align: center;'>Investment Planner</h1>", unsafe_allow_html=True)
-    
+
     tab1, tab2, tab3 = st.tabs(["Investment Calculator", "Portfolio Allocation", "Goal Tracker"])
-    
+
     with tab1:
         st.markdown("### Investment Calculator")
         calc_type = st.radio("Select Calculator Type", ["SIP", "Lump Sum"])
-        
+
+        # --- Input Fields ---
         if calc_type == "SIP":
-            monthly_investment = st.number_input("Monthly Investment (₹)", 
-                                               min_value=100, value=5000)
-            years = st.number_input("Investment Period (Years)", 
-                                  min_value=1, max_value=40, value=10)
-            expected_return = st.number_input("Expected Annual Return (%)", 
-                                            min_value=1.0, max_value=30.0, value=12.0)
-            
-            # Calculate SIP returns
-            monthly_rate = expected_return / (12 * 100)
-            months = years * 12
-            future_value = monthly_investment * ((pow(1 + monthly_rate, months) - 1) / 
-                                               monthly_rate) * (1 + monthly_rate)
-            
-            total_investment = monthly_investment * months
-            total_returns = future_value - total_investment
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Investment", f"₹{total_investment:,.2f}")
-            col2.metric("Total Returns", f"₹{total_returns:,.2f}")
-            col3.metric("Future Value", f"₹{future_value:,.2f}")
-            
+            initial_investment = 0
+            monthly_investment = st.number_input("Monthly Investment (₹)", min_value=100, value=5000)
+            period_unit = st.selectbox("Investment Period Unit", ["Years", "Months"])
+            if period_unit == "Years":
+                years = st.number_input("Investment Period (Years)", min_value=1, max_value=40, value=10)
+                months = years * 12  # Calculate months from years
+            else:  # Months
+                months = st.number_input("Investment Period (Months)", min_value=1, value=120)
+                years = months / 12  # Calculate years from months
+            expected_return = st.number_input("Expected Annual Return (%)", min_value=1.0, max_value=30.0,
+                                            value=12.0)
         else:  # Lump Sum
-            principal = st.number_input("Investment Amount (₹)", 
-                                      min_value=1000, value=100000)
-            years = st.number_input("Investment Period (Years)", 
-                                  min_value=1, max_value=40, value=10)
-            expected_return = st.number_input("Expected Annual Return (%)", 
-                                            min_value=1.0, max_value=30.0, value=12.0)
-            
-            # Calculate Lump Sum returns
-            future_value = principal * pow(1 + expected_return/100, years)
-            total_returns = future_value - principal
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Initial Investment", f"₹{principal:,.2f}")
-            col2.metric("Total Returns", f"₹{total_returns:,.2f}")
-            col3.metric("Future Value", f"₹{future_value:,.2f}")
-        
-        # Growth Visualization
-        st.markdown("### Investment Growth Projection")
-        years_range = np.arange(0, years + 1)
-        
+            initial_investment = st.number_input("Lump Sum Investment (₹)", min_value=1000, value=50000)
+            monthly_investment = 0  # For Lump Sum, no monthly investment
+            period_unit = st.selectbox("Investment Period Unit", ["Years", "Months"])
+            if period_unit == "Years":
+                years = st.number_input("Investment Period (Years)", min_value=1, max_value=40, value=10)
+                months = years * 12
+            else:
+                months = st.number_input("Investment Period (Months)", min_value=1, value=120)
+                years = months / 12
+            expected_return = st.number_input("Expected Annual Return (%)", min_value=1.0, max_value=30.0,
+                                            value=12.0)
+
+        # --- Common Input Fields ---
+        inflation_rate = st.slider("Assumed Inflation Rate (%)", 2.9, 8.9, 4.5)
+        holding_period = st.selectbox("Holding Period", ["Less than 12 months", "More than 12 months"])
+
+        # --- Calculations ---
+        monthly_rate = expected_return / (12 * 100)
+
         if calc_type == "SIP":
-            values = [monthly_investment * 12 * year for year in years_range]
-            monthly_rate = expected_return / (12 * 100)
-            growth_values = [monthly_investment * ((pow(1 + monthly_rate, year * 12) - 1) / 
-                                                 monthly_rate) * (1 + monthly_rate) 
-                           for year in years_range]
+            # Adjust for Inflation (SIP) - Moved inside the 'if' block
+            real_return = (1 + monthly_rate) / (1 + inflation_rate / 1200) - 1
+            future_value = monthly_investment * ((pow(1 + real_return, months) - 1) / real_return) * (
+                        1 + real_return)
+            total_investment = monthly_investment * months
+        else:  # Lump Sum
+            # Adjust for Inflation (Lump Sum)
+            real_return = (1 + expected_return / 100) / (1 + inflation_rate / 100) - 1
+            future_value = initial_investment * pow(1 + real_return, years)
+            total_investment = initial_investment
+
+        total_returns = future_value - total_investment
+        inflation_adjusted_value = future_value / pow(1 + inflation_rate / 100, years)
+
+        # Tax Calculation (based on India's 2025 Budget)
+        if holding_period == "Less than 12 months":
+            tax_rate = 0.20  # STCG - 20%
         else:
-            values = [principal] * len(years_range)
-            growth_values = [principal * pow(1 + expected_return/100, year) 
-                           for year in years_range]
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=years_range, y=values, 
-                               name='Investment Amount', line=dict(color='blue')))
-        fig.add_trace(go.Scatter(x=years_range, y=growth_values, 
-                               name='Growth', line=dict(color='green')))
-        
-        fig.update_layout(
-            title=f'{calc_type} Investment Growth',
-            xaxis_title='Years',
-            yaxis_title='Amount (₹)',
-            height=400
+            tax_rate = 0.125  # LTCG - 12.5%
+
+        tax_amount = total_returns * tax_rate
+        after_tax_returns = total_returns - tax_amount
+
+        # --- Display Results ---
+        st.markdown("### Investment Projections")
+
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Initial Investment", f"₹{total_investment:,.2f}")
+        col2.metric("Total Returns", f"₹{total_returns:,.2f}", help="Gross return before inflation & taxes")
+        col3.metric(
+            "Inflation-Adjusted Value",
+            f"₹{inflation_adjusted_value:,.2f}",
+            delta=f"-₹{(future_value - inflation_adjusted_value):,.2f}",
+            delta_color="inverse",
+            help=f"Future value adjusted for {inflation_rate:.2f}% annual inflation"
         )
-        st.plotly_chart(fig)
-    
+        col4.metric(
+            "After-Tax Returns",
+            f"₹{after_tax_returns:,.2f}",
+            delta=f"-₹{tax_amount:,.2f}",
+            delta_color="inverse",
+            help=f"Returns after deducting {tax_rate * 100:.2f}% tax"
+        )
+
+        # --- Growth Visualization ---
+        st.markdown("### Investment Growth Projection")
+        if period_unit == "Years":
+            period_range = np.arange(0, years + 1)
+            x_axis_label = 'Years'
+        else:  # Months
+            period_range = np.arange(0, months + 1)
+            x_axis_label = 'Months'
+
+        if calc_type == "SIP":
+            values = [monthly_investment * 12 * (period / 12) for period in
+                      period_range]  # Adjust for years/months
+            monthly_rate = expected_return / (12 * 100)
+            growth_values = [monthly_investment * ((pow(1 + monthly_rate, period) - 1) /
+                                                 monthly_rate) * (1 + monthly_rate)
+                            for period in period_range]
+            # ... (Rest of the growth visualization code)
+
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=period_range, y=growth_values, mode='lines', name='Investment Growth'))
+            fig.update_layout(
+                title=f'{calc_type} Investment Growth',
+                xaxis_title=x_axis_label,  # Update x-axis title
+                yaxis_title='Amount (₹)',
+                height=400
+            )
+            st.plotly_chart(fig)
+
     with tab2:
         st.markdown("### Portfolio Allocation")
         age = st.number_input("Your Age", min_value=18, max_value=100, value=30)
-        risk_profile = st.selectbox("Risk Profile", 
-                                  ["Conservative", "Moderate", "Aggressive"])
-        
+        risk_profile = st.selectbox("Risk Profile",
+                                     ["Conservative", "Moderate", "Aggressive"])
+
         # Calculate allocations based on age and risk profile
         equity_percent = max(20, min(80, 100 - age))
-        
+
         if risk_profile == "Conservative":
             equity_percent = max(20, equity_percent - 10)
         elif risk_profile == "Aggressive":
             equity_percent = min(80, equity_percent + 10)
-        
+
         debt_percent = 100 - equity_percent
-        
+
         # Equity breakdown
         large_cap = equity_percent * 0.60
         mid_cap = equity_percent * 0.25
         small_cap = equity_percent * 0.15
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             # Broad Asset Allocation
             fig = go.Figure(data=[go.Pie(
@@ -465,7 +950,7 @@ def investment_planner():
             )])
             fig.update_layout(title="Broad Asset Allocation")
             st.plotly_chart(fig)
-        
+
         with col2:
             # Equity Breakdown
             fig = go.Figure(data=[go.Pie(
@@ -475,23 +960,23 @@ def investment_planner():
             )])
             fig.update_layout(title="Equity Breakdown")
             st.plotly_chart(fig)
-        
+
         st.markdown(f"""
         ### Recommended Allocation
-        
+
         **Broad Asset Allocation:**
         - Equity: {equity_percent:.1f}%
         - Debt: {debt_percent:.1f}%
-        
+
         **Equity Breakdown:**
         - Large Cap: {large_cap:.1f}%
         - Mid Cap: {mid_cap:.1f}%
         - Small Cap: {small_cap:.1f}%
         """)
-    
+
     with tab3:
         st.markdown("### Goal Tracker")
-        
+
         # Add New Goal
         with st.expander("Add New Goal", expanded=True):
             with st.form("new_goal"):
@@ -500,56 +985,56 @@ def investment_planner():
                 goal_date = st.date_input("Target Date")
                 priority = st.selectbox("Priority", ["High", "Medium", "Low"])
                 current_amount = st.number_input("Current Amount (₹)", min_value=0)
-                
+
                 submitted = st.form_submit_button("Add Goal")
                 if submitted:
                     conn = sqlite3.connect('finance_tracker.db')
                     c = conn.cursor()
                     c.execute("""
-                        INSERT INTO goals (user_id, name, target_amount, current_amount, 
-                                         target_date, priority)
+                        INSERT INTO goals (user_id, name, target_amount, current_amount,
+                                           target_date, priority)
                         VALUES (?, ?, ?, ?, ?, ?)
-                    """, (st.session_state.user_id, goal_name, goal_amount, 
+                    """, (st.session_state.user_id, goal_name, goal_amount,
                           current_amount, goal_date.strftime("%Y-%m-%d"), priority))
                     conn.commit()
                     conn.close()
                     st.success("Goal added successfully!")
-        
+
         # Display Goals
         conn = sqlite3.connect('finance_tracker.db')
         df_goals = pd.read_sql_query("""
-            SELECT name, target_amount, current_amount, target_date, priority 
-            FROM goals 
+            SELECT name, target_amount, current_amount, target_date, priority
+            FROM goals
             WHERE user_id = ?
         """, conn, params=(st.session_state.user_id,))
         conn.close()
-        
+
         if not df_goals.empty:
             st.markdown("### Your Financial Goals")
-            
+
             for _, goal in df_goals.iterrows():
                 progress = (goal['current_amount'] / goal['target_amount']) * 100
-                
+
                 st.markdown(f"""
-                <div style='padding: 1rem; background-color: white; border-radius: 0.5rem; 
+                <div style='padding: 1rem; background-color: white; border-radius: 0.5rem;
                             box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 1rem 0;'>
                     <h4>{goal['name']} ({goal['priority']} Priority)</h4>
                 </div>
                 """, unsafe_allow_html=True)
-                
+
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
-                    st.progress(progress/100)
+                    st.progress(progress / 100)
                     st.markdown(f"Progress: {progress:.1f}%")
-                
+
                 with col2:
                     st.markdown(f"""
-                    Target: ₹{goal['target_amount']:,.2f}  
-                    Current: ₹{goal['current_amount']:,.2f}  
+                    Target: ₹{goal['target_amount']:,.2f}
+                    Current: ₹{goal['current_amount']:,.2f}
                     Target Date: {goal['target_date']}
                     """)
-                
+
                 # Calculate monthly savings needed
                 target_date = datetime.strptime(goal['target_date'], "%Y-%m-%d")
                 months_remaining = (target_date - datetime.now()).days / 30
@@ -557,42 +1042,8 @@ def investment_planner():
                     monthly_needed = (goal['target_amount'] - goal['current_amount']) / months_remaining
                     st.info(f"You need to save ₹{monthly_needed:,.2f} monthly to reach your goal")
 
-# Update the main() function
-def main():
-    if not st.session_state.authenticated:
-        auth_page()
-    else:
-        selected = create_ion()
-        
-        if selected == "Dashboard":
-            dashboard()
-        elif selected == "Expenses":
-            expense_tracker()
-        elif selected == "Investments":
-            investment_planner()
-        elif selected == "Analysis":
-            st.title("Analysis - Coming in Section 3")
-        elif selected == "Settings":
-            st.title("Settings - Coming in Section 3")
 
-# ============= MAIN APP =============
-def main():
-    if not st.session_state.authenticated:
-        auth_page()
-    else:
-        selected = create_ion()
-        
-        if selected == "Dashboard":
-            st.title("Dashboard - Coming in Section 2")
-        elif selected == "Expenses":
-            st.title("Expenses - Coming in Section 2")
-        elif selected == "Investments":
-            st.title("Investments - Coming in Section 2")
-        elif selected == "Analysis":
-            st.title("Analysis - Coming in Section 3")
-        elif selected == "Settings":
-            st.title("Settings - Coming in Section 3")
-# ============= ADVANCED ANALYTICS =============
+# ============ ADVANCED ANALYTICS ============
 def advanced_analytics():
     st.markdown("<h1 style='text-align: center;'>Advanced Analytics</h1>", unsafe_allow_html=True)
     
@@ -643,8 +1094,6 @@ def advanced_analytics():
                            labels={'x': 'Day', 'y': 'Average Amount (₹)'})
                 st.plotly_chart(fig)
             
-            
-           
             # Calculate metrics
             total_monthly = df_expenses.groupby(df_expenses['date'].dt.strftime('%Y-%m'))['amount'].sum()
             avg_monthly = total_monthly.mean()
@@ -674,13 +1123,13 @@ def advanced_analytics():
         
         # Sample investment data (replace with actual data)
         investment_data = pd.DataFrame({
-            'Date': pd.date_range(start='2023-01-01', periods=12, freq='M'),
+            'Date': pd.date_range(start='2023-01-01', periods=12, freq='ME'),
             'Equity': np.random.normal(12000, 2000, 12).cumsum(),
             'Debt': np.random.normal(8000, 1000, 12).cumsum(),
             'Gold': np.random.normal(5000, 500, 12).cumsum()
         })
         
-        # Portfolio Performance
+                # Portfolio Performance
         fig = px.line(investment_data, x='Date',
                      y=['Equity', 'Debt', 'Gold'],
                      title='Portfolio Performance Over Time')
@@ -707,15 +1156,28 @@ def advanced_analytics():
         with col1:
             total_value = df_allocation['Amount'].sum()
             st.metric("Total Portfolio Value", f"₹{total_value:,.2f}")
-        
+            
         with col2:
-            returns = (total_value - investment_data.iloc[0].sum()) / investment_data.iloc[0].sum() * 100
+            # Safety check to ensure we're only working with numeric data
+            if 'Date' in investment_data.columns:
+                investment_data_numeric = investment_data.drop(columns=['Date'])
+            else:
+                investment_data_numeric = investment_data
+                
+            # Get the first row as a Series and filter out non-numeric values
+            first_row = investment_data_numeric.iloc[0]
+            # Instead of select_dtypes, manually filter numeric values
+            numeric_values = [value for value in first_row if isinstance(value, (int, float))]
+            investment_sum = sum(numeric_values) if numeric_values else 0
+            
+            # Calculate returns
+            returns = (total_value - investment_sum) / investment_sum * 100 if investment_sum > 0 else 0
             st.metric("Total Returns", f"{returns:.1f}%")
         
         with col3:
             monthly_return = returns / 12
             st.metric("Average Monthly Return", f"{monthly_return:.1f}%")
-    
+
     with tab3:
         st.markdown("### Financial Health Score")
         
@@ -730,6 +1192,7 @@ def advanced_analytics():
         with col2:
             total_investments = st.number_input("Total Investments (₹)", min_value=0, value=200000)
             total_debt = st.number_input("Total Debt (₹)", min_value=0, value=0)
+
         
         # Calculate ratios
         savings_rate = ((monthly_income - monthly_expenses) / monthly_income) * 100 if monthly_income > 0 else 0
@@ -810,7 +1273,7 @@ def advanced_analytics():
         for rec in recommendations:
             st.markdown(rec)
 
-# ============= SETTINGS PAGE =============
+# ============ SETTINGS PAGE ============
 def settings_page():
     st.markdown("<h1 style='text-align: center;'>Settings</h1>", unsafe_allow_html=True)
     
@@ -894,8 +1357,24 @@ def settings_page():
                 st.success("Account deleted successfully!")
                 st.rerun()
 
-# Update the main() function
+# ============ MAIN APP ============
 def main():
+    # Apply theme
+    handle_theme_from_url()
+       
+    # Add theme switcher to the header
+    theme_switcher_html = theme_toggle()
+    st.markdown(
+        f"""
+        <div class="header-container"> 
+            <div style="position: relative; z-index: 9999;">{theme_switcher_html}</div> 
+            {currency_switcher()} 
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    
     if not st.session_state.authenticated:
         auth_page()
     else:
@@ -918,7 +1397,6 @@ def main():
                 Developed by Muhammed Adnan | Contact: kladnan321@gmail.com
             </div>
         """, unsafe_allow_html=True)
-
 
 if __name__ == "__main__":
     main()
