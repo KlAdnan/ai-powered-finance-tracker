@@ -28,8 +28,8 @@ Ensure you have the following installed before running the project:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/AI-Powered-Finance-Tracker.git
-cd AI-Powered-Finance-Tracker
+git clone https://github.com/KlAdnan/ai-powered-finance-tracker.git
+cd ai-powered-finance-tracker
 ```
 
 ### 2. Create a Virtual Environment (Optional but Recommended)
@@ -75,7 +75,7 @@ Then open `http://localhost:8501` in your browser.
 ## Project Structure
 
 ```
-AI-Powered-Finance-Tracker/
+ai-powered-finance-tracker/
 │
 ├── realfinance.py          # Main application script
 ├── requirements.txt        # Required dependencies
@@ -94,7 +94,7 @@ git commit -m "Initial commit"
 
 To push changes to GitHub:
 ```bash
-git remote add origin https://github.com/yourusername/AI-Powered-Finance-Tracker.git
+git remote add origin https://github.com/KlAdnan/ai-powered-finance-tracker.git
 git branch -M main
 git push -u origin main
 ```
