@@ -27,38 +27,56 @@ Ensure you have the following installed before running the project:
 ## Installation
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/KlAdnan/ai-powered-finance-tracker.git
+```
+
+### 2. Navigate to the Project Directory
+
+```bash
 cd ai-powered-finance-tracker
 ```
 
-### 2. Create a Virtual Environment (Optional but Recommended)
+If you can't find the directory after cloning, verify the folder name using:
 ```bash
-python -m venv venv  # Creates a virtual environment
-source venv/bin/activate  # On macOS/Linux
-venv\Scripts\activate  # On Windows
+ls  # macOS/Linux
+dir  # Windows
+```
+If needed, navigate manually to the correct directory.
+
+### 3. Create a Virtual Environment (Recommended)
+
+```bash
+python -m venv venv  # Create a virtual environment
+source venv/bin/activate  # macOS/Linux
+venv\Scripts\activate  # Windows
 ```
 
-### 3. Install Required Packages
+### 4. Install Required Packages
 
 Run the following command to install all dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 If you need to install dependencies manually, use:
+
 ```bash
 pip install streamlit pandas numpy plotly yfinance streamlit-option-menu hashlib
 ```
 
-### 4. Create a SQLite Database
+### 5. Create a SQLite Database
 
 Run the application once to initialize the database:
+
 ```bash
 python realfinance.py
 ```
 
 Alternatively, create the database manually:
+
 ```bash
 python -c "import sqlite3; conn = sqlite3.connect('finance_tracker.db'); conn.close()"
 ```
@@ -66,6 +84,7 @@ python -c "import sqlite3; conn = sqlite3.connect('finance_tracker.db'); conn.cl
 ## Running the Application
 
 To start the Streamlit web app, run:
+
 ```bash
 streamlit run realfinance.py
 ```
@@ -86,6 +105,7 @@ ai-powered-finance-tracker/
 ## Version Control (Optional but Recommended)
 
 To track changes using Git, initialize the repository and make the first commit:
+
 ```bash
 git init
 git add .
@@ -93,6 +113,7 @@ git commit -m "Initial commit"
 ```
 
 To push changes to GitHub:
+
 ```bash
 git remote add origin https://github.com/KlAdnan/ai-powered-finance-tracker.git
 git branch -M main
@@ -103,12 +124,14 @@ git push -u origin main
 
 ### 1. `ModuleNotFoundError`
 If you get an error like `ModuleNotFoundError: No module named 'streamlit'`, make sure you have installed all dependencies by running:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 2. Database Errors
 If you face issues with the database, try deleting `finance_tracker.db` and rerunning the script to regenerate it:
+
 ```bash
 rm finance_tracker.db  # macOS/Linux
 del finance_tracker.db  # Windows
@@ -117,9 +140,19 @@ python realfinance.py
 
 ### 3. Streamlit Not Found
 If the command `streamlit run` is not recognized, activate the virtual environment or install Streamlit globally:
+
 ```bash
 pip install streamlit
 ```
+
+### 4. Can't Find the Cloned Directory
+If the repository directory is missing after cloning, try:
+
+```bash
+ls  # macOS/Linux
+dir  # Windows
+```
+Manually navigate to the correct directory or ensure the repository was cloned properly.
 
 ## Contributing
 
@@ -128,5 +161,5 @@ Feel free to fork this repository, submit pull requests, or report issues. Contr
 ## Author
 
 Developed by **Muhammed Adnan**  
-📧 Contact: kladnan321@gmail.com
+📧 Contact: [kladnan321@gmail.com](mailto:kladnan321@gmail.com)
 
